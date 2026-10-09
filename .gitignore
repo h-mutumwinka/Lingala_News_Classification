@@ -1,0 +1,12 @@
+__pycache__/
+.ipynb_checkpoints/
+*.pyc
+.venv/
+venv/
+# Large model files live on the Hugging Face Hub, not in git
+models/transformer_final/
+models/scratch_tokeniser/
+*.safetensors
+*.bin
+transformer_results.zip
+space_upload/

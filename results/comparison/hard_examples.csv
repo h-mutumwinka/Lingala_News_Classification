@@ -1,0 +1,7 @@
+headline,true_label,rnn,tfidf_best,tfidf_naive_bayes,transformer_scratch,word2vec_average
+Basali ya société canadienne Banro bakangami na basimba minduki,business,politics,politics,politics,politics,politics
+Ouganda na RDC batie manzaka na boyokani mpo na botongami ya ba nzela mpe bokengi na Congo,business,politics,politics,politics,politics,politics
+Parlement endimi kobakisa mikolo na état d'urgence sanitaire,health,politics,politics,politics,politics,politics
+Etat d'urgence na Congo-Brazzaville mpo na mpela,health,politics,politics,politics,business,politics
+Assemblée nationale endimi kobakisi mikolo na état d'urgence sanitaire,health,politics,politics,politics,politics,politics
+Minganga 266 bazongi Congo-Brazzaville nsima kosilisa kelasi na Cuba,health,politics,politics,politics,business,politics

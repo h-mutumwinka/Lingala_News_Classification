@@ -1,0 +1,32 @@
+model_family,experiment,CV macro-F1 (train),validation macro-F1,CV std,what changed
+bag_of_words,A1_majority,0.183,0.182,0.0,Floor: predicts class shares
+bag_of_words,A2_nb_alpha1,0.216,0.233,0.02,Default NB smoothing
+bag_of_words,A3_nb_alpha0.1,0.684,0.753,0.029,Less smoothing
+bag_of_words,A4_complement_nb,0.746,0.828,0.048,Complement NB for unbalanced classes
+bag_of_words,A5_logreg,0.76,0.787,0.035,"Logistic regression, no class weights"
+bag_of_words,A6_logreg_balanced,0.84,0.902,0.049,Balanced class weights
+bag_of_words,A7_svm_balanced,0.854,0.902,0.046,"Linear SVM, calibrated"
+bag_of_words,B1_word_1-2grams,0.789,0.866,0.048,Adds word pairs
+bag_of_words,B2_char_2-5,0.852,0.868,0.024,Character n-grams inside words
+bag_of_words,B3_char_3-6,0.848,0.868,0.028,Longer character n-grams
+bag_of_words,B4_word+char,0.845,0.881,0.032,Word 1-2 grams + char 2-5 grams
+bag_of_words,B5_svm_word+char,0.855,0.881,0.022,SVM on word+char
+bag_of_words,C1_headline_only,0.71,0.762,0.039,Only the headline
+bag_of_words,C2_text_only,0.851,0.881,0.02,Only the body text
+bag_of_words,C3_strip_accents,0.858,0.881,0.022,"Remove accents: été -> ete, Léopards -> Leopards"
+bag_of_words,D_C=0.1,0.843,0.902,0.029,Smaller C = stronger regularisation
+bag_of_words,D_C=10,0.861,0.881,0.028,Smaller C = stronger regularisation
+rnn,R1_bilstm_random_embeddings,,0.863,,Random embeddings instead of Word2Vec
+rnn,R2_bilstm_word2vec_finetuned,,0.89,,"Reference: Word2Vec init, fine-tuned"
+rnn,R3_bilstm_word2vec_frozen,,0.856,,Word2Vec frozen (not updated)
+rnn,R4_bilstm_last_state,,0.921,,Last hidden state instead of attention
+rnn,R5_bigru_attention,,0.862,,GRU instead of LSTM
+rnn,R6_bilstm_no_class_weights,,0.925,,Unweighted cross-entropy
+transformer_scratch,T1_2layers_128d,,0.844,,"2 layers, hidden 128, 256 tokens"
+transformer_scratch,T2_4layers_256d,,0.769,,"Bigger: 4 layers, hidden 256"
+transformer_scratch,T3_2layers_512tokens,,0.809,,Longer input: 512 tokens
+word2vec,W1_skipgram_100d,,0.839,,Averaged Word2Vec + logistic regression
+word2vec,W2_cbow_100d,,0.809,,Averaged Word2Vec + logistic regression
+word2vec,W3_skipgram_300d,,0.85,,Averaged Word2Vec + logistic regression
+word2vec,W4_skipgram_window10,,0.809,,Averaged Word2Vec + logistic regression
+word2vec,W5_skipgram_strip_accents,,0.866,,Averaged Word2Vec + logistic regression

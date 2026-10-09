@@ -1,0 +1,16 @@
+{
+  "labels": [
+    "politics",
+    "health",
+    "sports",
+    "business"
+  ],
+  "settings": {
+    "classifier": "linear_svm",
+    "C": 10,
+    "class_weight": true,
+    "features": "word+char",
+    "text_column": "content"
+  },
+  "experiment": "D_C=10"
+}

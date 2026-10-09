@@ -1,0 +1,10 @@
+# Requirements for the Hugging Face Space (Gradio SDK installs gradio itself).
+# scikit-learn must match the version used to save tfidf_classifier.joblib.
+scikit-learn==1.9.1
+joblib
+numpy
+# Only needed when TRANSFORMER_MODEL is set:
+torch
+transformers
+sentencepiece
+protobuf
