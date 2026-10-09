@@ -114,13 +114,19 @@ class RecurrentClassifier(nn.Module):
 # --------------------------------------------------------------- training
 
 
+def get_device() -> torch.device:
+    # Uses the GPU on Colab when available; the code also runs (slower) on a CPU
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
 def predict_probabilities(model, ids, lengths, batch_size: int = 64) -> np.ndarray:
+    device = next(model.parameters()).device
     model.eval()
     outputs = []
     with torch.no_grad():
         for start in range(0, len(ids), batch_size):
-            logits = model(ids[start : start + batch_size], lengths[start : start + batch_size])
-            outputs.append(torch.softmax(logits, dim=1).numpy())
+            logits = model(ids[start : start + batch_size].to(device), lengths[start : start + batch_size])
+            outputs.append(torch.softmax(logits, dim=1).cpu().numpy())
     return np.concatenate(outputs)
 
 
@@ -153,10 +159,11 @@ def train_recurrent_model(
     val_y = data_loading.labels_to_ids(validation["category"])
 
     embeddings = pretrained_embeddings_fn(vocabulary) if pretrained_embeddings_fn else None
-    model = RecurrentClassifier(len(vocabulary), settings, embeddings)
+    device = get_device()
+    model = RecurrentClassifier(len(vocabulary), settings, embeddings).to(device)
 
     weights = class_weights_from(train_y) if settings.get("class_weight") else None
-    loss_function = nn.CrossEntropyLoss(weight=weights)
+    loss_function = nn.CrossEntropyLoss(weight=weights.to(device) if weights is not None else None)
     optimiser = torch.optim.Adam(
         [p for p in model.parameters() if p.requires_grad],
         lr=settings["learning_rate"],
@@ -178,6 +185,7 @@ def train_recurrent_model(
         total = 0.0
         for batch_x, batch_len, batch_y in loader:
             optimiser.zero_grad()
+            batch_x, batch_y = batch_x.to(device), batch_y.to(device)
             loss = loss_function(model(batch_x, batch_len), batch_y)
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), 1.0)  # stops exploding gradients in RNNs
@@ -218,7 +226,7 @@ def attention_for_text(model, vocabulary, text: str, settings: dict, top: int = 
     ids, lengths = encode_texts([text], vocabulary, settings["max_length"], settings.get("strip_accents", False))
     model.eval()
     with torch.no_grad():
-        _, weights = model(ids, lengths, return_attention=True)
-    weights = weights[0, : len(tokens)].numpy()
+        _, weights = model(ids.to(next(model.parameters()).device), lengths, return_attention=True)
+    weights = weights[0, : len(tokens)].cpu().numpy()
     order = weights.argsort()[::-1][:top]
     return [(tokens[i], round(float(weights[i]), 3)) for i in order]

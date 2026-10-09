@@ -17,7 +17,7 @@ short_description: Classify Lingala news into politics, health, sports, business
 Paste a Lingala news article and get its topic: politics, health, sports or business.
 Trained on the Lingala part of MasakhaNEWS (Adelani et al., 2023).
 
-Source code, experiments and report: https://github.com/YOUR-GITHUB-USERNAME/lingala-news-classification
+Source code, experiments and report: https://github.com/h-mutumwinka/Lingala_News_Classification
 
 To use the fine-tuned Transformer, set a Space variable `TRANSFORMER_MODEL` to the Hugging Face model
 repository, for example `YOUR-HF-USERNAME/lingala-news-topic-classifier`.

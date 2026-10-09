@@ -8,8 +8,9 @@ Author: Joseph Nishimwe
 
 | Resource | Link |
 |---|---|
+| GitHub repository | https://github.com/h-mutumwinka/Lingala_News_Classification |
 | Live web app | `https://huggingface.co/spaces/YOUR-HF-USERNAME/lingala-news-topic-classifier` *(add after deployment)* |
-| Fine-tuned model | `https://huggingface.co/YOUR-HF-USERNAME/lingala-news-topic-classifier` *(add after notebook 06)* |
+| Fine-tuned model | `https://huggingface.co/YOUR-HF-USERNAME/lingala-news-topic-classifier` *(add after Part 6)* |
 | Demo video | *(add link)* |
 | Report | *(add link)* |
 
@@ -39,21 +40,24 @@ normalises Unicode (NFC), replaces typographic quotes, removes URLs, stray symbo
 `content = headline + ". " + text`, and checks that no article appears in two splits. We keep the accents (they carry tone and
 French loanwords) and test removing them as an experiment.
 
-Key findings from the EDA (`notebooks/01_eda.ipynb`): strong class imbalance; 53% of the training vocabulary occurs only once and about
+Key findings from the EDA (Part 1 of the notebook): strong class imbalance; 53% of the training vocabulary occurs only once and about
 7% of test tokens are unseen in training; frequent French code-mixing (*ba stocks*, *procès*, *Léopards*); inconsistent accents and
 spellings (*président/president*, *Tshisekedi/Tshiskedi*); articles concentrated in 2018–2023 (Ebola, COVID-19).
 
 ## 3. Methodology
 
-| Notebook | What it does | Runs on |
-|---|---|---|
-| `01_eda.ipynb` | Exploratory data analysis | CPU |
-| `02_bag_of_words_baselines.ipynb` | Majority class, TF-IDF + Naive Bayes / Logistic Regression / linear SVM; feature, input and preprocessing experiments; 5-fold × 3 cross-validation | CPU, ~10 min |
-| `03_word2vec.ipynb` | Word2Vec trained on the training articles; averaged document vectors + logistic regression | CPU, ~3 min |
-| `04_rnn.ipynb` | BiLSTM / BiGRU with attention, random vs Word2Vec embeddings, frozen vs fine-tuned, class weights | CPU, ~80 min |
-| `05_transformer_from_scratch.ipynb` | Small BERT-style Transformer with its own WordPiece tokeniser, no pre-training (control) | CPU |
-| `06_transformer_finetuning_colab.ipynb` | Fine-tuning XLM-R base vs AfroXLMR base (and 76L), truncation and class-weight ablations | **Colab GPU**, ~45-60 min |
-| `07_results_and_error_analysis.ipynb` | Final comparison, bootstrap confidence intervals, significance tests, error analysis | CPU |
+Everything runs from **one notebook, `notebooks/lingala_news_classification.ipynb`**, organised in seven parts.
+The reusable code (models, training loops, metrics) lives in `src/`.
+
+| Part | What it does |
+|---|---|
+| 1 | Exploratory data analysis |
+| 2 | Majority class, TF-IDF + Naive Bayes / Logistic Regression / linear SVM; feature, input and preprocessing experiments; 5-fold x 3 cross-validation |
+| 3 | Word2Vec trained on the training articles; averaged document vectors + logistic regression |
+| 4 | BiLSTM / BiGRU with attention: random vs Word2Vec embeddings, frozen vs fine-tuned, class weights |
+| 5 | Small BERT-style Transformer with its own WordPiece tokeniser, no pre-training (control) |
+| 6 | Fine-tuning XLM-R base vs AfroXLMR base (and 76L); truncation and class-weight ablations (needs a GPU) |
+| 7 | Final comparison, bootstrap confidence intervals, significance tests, error analysis |
 
 Evaluation protocol:
 * Train on `train`, tune on `validation`, use `test` **once** per final model.
@@ -74,7 +78,7 @@ Test set (175 articles), each final model evaluated once. Neural models: mean ±
 | Averaged Word2Vec + LogReg | 0.860 | 0.797–0.909 | 0.875 | 0.874 | 0.718 |
 | BiLSTM + attention (Word2Vec init) | 0.861 ± 0.018 | 0.769–0.903 | 0.882 | 0.886 | 0.683 |
 | Transformer from scratch | 0.752 ± 0.041 | 0.702–0.836 | 0.822 | 0.821 | 0.374 |
-| Fine-tuned AfroXLMR / XLM-R | *run notebook 06* | | | | |
+| Fine-tuned AfroXLMR / XLM-R | *run Part 6* | | | | |
 
 Published MasakhaNEWS weighted-F1 for Lingala (Adelani et al., 2023): NB 82.8, MLP 84.3, XLM-R base 87.9, AfroXLMR base 93.0.
 
@@ -99,24 +103,24 @@ TRANSFORMER_MODEL=YOUR-HF-USERNAME/lingala-news-topic-classifier python app/app.
 Deploying to Hugging Face Spaces:
 1. Create a new Space (SDK: Gradio, hardware: free CPU).
 2. Run `bash app/prepare_space.sh` and upload everything in `space_upload/` to the Space.
-3. Optional: in the Space settings add the variable `TRANSFORMER_MODEL` with your model repository name (pushed from notebook 06).
+3. Optional: in the Space settings add the variable `TRANSFORMER_MODEL` with your model repository name (pushed from Part 6).
 
 ## 6. How to reproduce
 
 ```bash
-git clone https://github.com/YOUR-GITHUB-USERNAME/lingala-news-classification.git
-cd lingala-news-classification
+git clone https://github.com/h-mutumwinka/Lingala_News_Classification.git
+cd Lingala_News_Classification
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python -m src.data_preparation          # downloads and cleans the data into data/processed/
-jupyter notebook                        # run notebooks 01 to 05 and 07 in order
+jupyter notebook notebooks/lingala_news_classification.ipynb
 ```
 
-Notebook 06 needs a GPU: open it in Google Colab (Runtime → T4 GPU), set `REPO_URL` in the first cell, run all, and copy the
-downloaded `results/` folder back into the repository. Then re-run notebook 07.
+The easiest way is Google Colab: open the notebook from GitHub, choose **Runtime → Change runtime type → T4 GPU** and
+**Run all** (about 1.5 hours). Part 6 needs the GPU. At the end the notebook downloads `results.zip`; unzip it into the repository and commit.
 
 All random seeds are fixed (`src/config.py`). Every experiment is appended to `results/experiment_logs/<family>.csv`, and the test
-probabilities of every final model are saved in `results/predictions/`, so notebook 07 rebuilds every table without retraining.
+probabilities of every final model are saved in `results/predictions/`, so Part 7 rebuilds every table without retraining.
 
 ## 7. Repository structure
 
@@ -125,13 +129,13 @@ app/                  Gradio web app, Space README, examples from the test set
 data/raw/             MasakhaNEWS Lingala TSV files (train, dev, test)
 data/processed/       Cleaned CSV splits (created by src/data_preparation.py)
 models/               Saved TF-IDF model and Word2Vec vectors (the Transformer lives on the Hugging Face Hub)
-notebooks/            01-07, see the table above
+notebooks/            lingala_news_classification.ipynb (Parts 1-7)
 results/
   experiment_logs/    One CSV per model family, one row per experiment
   predictions/        Test-set probabilities of each final model
   misclassified/      Wrong test predictions, for the error analysis
   figures/            Plots per model
-  comparison/         Final tables and figures from notebook 07
+  comparison/         Final tables and figures from Part 7
 src/
   config.py           Paths, labels, seeds
   data_preparation.py Download, cleaning, quality checks
