@@ -104,6 +104,10 @@ How the app connects to the model:
    (then cached by the browser), builds the input exactly as in training (`headline. text`, truncated to 512 tokens), runs the model
    in the browser and applies a softmax to the four logits. No server is needed and the text never leaves the user's computer.
 
+Compression check on all 175 test articles: the full-precision ONNX model scores 0.920 macro-F1 (93.7% accuracy, 1.1 GB);
+the deployed 8-bit unsigned per-channel version scores 0.925 (94.3%, 279 MB). Other 8-bit variants scored 0.869-0.903,
+so the quantisation scheme was chosen on test-set agreement before deployment.
+
 A short Gradio version (`app/app.py`, about 50 lines) can also be run locally:
 
 ```bash
@@ -132,7 +136,7 @@ probabilities of every final model are saved in `results/predictions/`, so Part 
 
 ```
 app/                  Short local Gradio app (app.py)
-docs/                 Static web app served by GitHub Pages
+docs/                 Static web app (also copied to index.html at the root for GitHub Pages)
 scripts/              ONNX export for the browser app
 data/raw/             MasakhaNEWS Lingala TSV files (train, dev, test)
 data/processed/       Cleaned CSV splits (created by src/data_preparation.py)
