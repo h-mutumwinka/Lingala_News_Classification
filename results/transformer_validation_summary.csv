@@ -1,0 +1,5 @@
+experiment,model,change,macro_f1,weighted_f1,log_loss,best_epoch
+P1_xlmr_base,xlmr_base,XLM-R base: no African-language adaptation,0.8647,0.89,0.3437,5
+P2_afroxlmr_base,afroxlmr_base,AfroXLMR base: adapted to 17 African languages (not Lingala),0.9097,0.9399,0.2241,4
+Q1_head_only,afroxlmr_base,Keep only the first 510 tokens,0.9334,0.9532,0.1984,5
+Q2_no_class_weights,afroxlmr_base,Unweighted cross-entropy,0.9334,0.9532,0.2265,8

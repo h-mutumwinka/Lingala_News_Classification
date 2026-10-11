@@ -1,6 +1,7 @@
 model,share of resamples where it is NOT better than TF-IDF+SVM,articles it gets right that TF-IDF+SVM gets wrong,articles TF-IDF+SVM gets right that it gets wrong
 Majority class,1.0,5,55
-BiLSTM + attention (Word2Vec init),0.25,8,5
+BiLSTM + attention (Word2Vec init),0.029,16,7
 TF-IDF + Naive Bayes,1.0,4,12
-Transformer from scratch,0.871,12,15
+Fine-tuned pretrained Transformer,0.002,19,5
+Transformer from scratch,0.824,10,10
 Averaged Word2Vec + LogReg,0.103,8,5

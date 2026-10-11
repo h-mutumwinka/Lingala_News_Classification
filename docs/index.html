@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lingala News Topic Classifier</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --surface: #ffffff; --text: #1d1d1b; --muted: #5f5e5a; --border: #dcdad3;
+    --accent: #1f6f5c; --accent-soft: #e3f0ec; --warn-bg: #fff4dc; --warn-text: #7a5300;
+    --politics: #3b5bdb; --health: #2f9e44; --sports: #e8590c; --business: #9c36b5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161614; --surface: #20201d; --text: #ecebe6; --muted: #a8a69f; --border: #3a3935;
+      --accent: #63c2a6; --accent-soft: #1f3530; --warn-bg: #3a2f14; --warn-text: #f2cf7a;
+      --politics: #7d94f0; --health: #69c37a; --sports: #f2915a; --business: #c97ad8;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { font-size: 1.9rem; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .lead { color: var(--muted); margin: 0 0 24px; max-width: 70ch; }
+  .grid { display: grid; grid-template-columns: 3fr 2fr; gap: 20px; align-items: start; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  label { display: block; font-weight: 600; font-size: 0.92rem; margin: 0 0 6px; }
+  input, textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+                    background: var(--bg); color: var(--text); font: inherit; }
+  textarea { min-height: 220px; resize: vertical; }
+  .field { margin-bottom: 14px; }
+  button { font: inherit; cursor: pointer; border-radius: 8px; }
+  #classify { background: var(--accent); color: #fff; border: 0; padding: 10px 20px; font-weight: 600; }
+  #classify:disabled { opacity: 0.55; cursor: wait; }
+  @media (prefers-color-scheme: dark) { #classify { color: #10221d; } }
+  .examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .examples button { background: var(--accent-soft); color: var(--text); border: 1px solid var(--border);
+                     padding: 6px 10px; font-size: 0.85rem; text-align: left; max-width: 100%; }
+  .status { font-size: 0.9rem; color: var(--muted); margin-top: 10px; min-height: 1.4em; }
+  .result-label { font-size: 1.35rem; font-weight: 700; margin: 0 0 4px; }
+  .result-sub { color: var(--muted); margin: 0 0 16px; font-size: 0.92rem; }
+  .bar-row { display: grid; grid-template-columns: 190px 1fr 52px; gap: 10px; align-items: center; margin: 8px 0; font-size: 0.92rem; }
+  .bar-track { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; height: 14px; overflow: hidden; }
+  .bar-fill { height: 100%; width: 0; transition: width 0.4s ease; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .warn { background: var(--warn-bg); color: var(--warn-text); border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; margin-top: 14px; }
+  .note { color: var(--muted); font-size: 0.88rem; }
+  .placeholder { color: var(--muted); }
+  section.about { margin-top: 28px; }
+  section.about h2 { font-size: 1.1rem; margin: 0 0 8px; }
+  a { color: var(--accent); }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Lingala News Topic Classifier</h1>
+  <p class="lead">Paste a Lingala news headline and/or article. The model predicts whether it is about
+    <strong>politics</strong> (politiki), <strong>health</strong> (bokolongono), <strong>sports</strong> (masano)
+    or <strong>business</strong> (mombongo).</p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="field">
+        <label for="headline">Headline</label>
+        <input id="headline" type="text" placeholder="e.g. Ba Léopards babetami lisusu fimbu na CAN 2019">
+      </div>
+      <div class="field">
+        <label for="text">Article text</label>
+        <textarea id="text" placeholder="Paste the Lingala article here..."></textarea>
+      </div>
+      <button id="classify" disabled>Loading model...</button>
+      <div class="status" id="status">Downloading the model (about 280 MB, only the first time; it is cached afterwards)...</div>
+      <div style="margin-top:14px">
+        <span class="note">Examples from the MasakhaNEWS Lingala test set (true topic in brackets):</span>
+        <div class="examples" id="examples"></div>
+      </div>
+    </div>
+
+    <div class="card" id="result-card">
+      <p class="placeholder" id="placeholder">The predicted topic and the probability of each topic will appear here.</p>
+      <div id="result" class="hidden">
+        <p class="result-label" id="result-label"></p>
+        <p class="result-sub" id="result-sub"></p>
+        <div id="bars"></div>
+        <div class="warn hidden" id="warn"></div>
+      </div>
+    </div>
+  </div>
+
+  <section class="about card">
+    <h2>About the model</h2>
+    <p class="note">Fine-tuned <a href="https://huggingface.co/Davlan/afro-xlmr-base">AfroXLMR-base</a> (Alabi et al., 2022) on the
+      Lingala part of <a href="https://huggingface.co/datasets/masakhane/masakhanews">MasakhaNEWS</a> (Adelani et al., 2023):
+      608 Voice of America Lingala articles. Test macro-F1 0.911, accuracy 93%.
+      The model runs entirely in your browser with <a href="https://huggingface.co/docs/transformers.js">Transformers.js</a>
+      (8-bit ONNX version of <a href="https://huggingface.co/Heroine2/lingala-news-topic-classifier">Heroine2/lingala-news-topic-classifier</a>);
+      your text is not sent to any server.
+      Code and report: <a href="https://github.com/h-mutumwinka/Lingala_News_Classification">GitHub</a>.</p>
+    <p class="note"><strong>Limitations.</strong> Only four topics are known, so an article about culture or religion is still forced into one of them.
+      The training news is from VOA Lingala, mostly 2018-2023 (Ebola, COVID-19, DRC politics); other styles may be classified less reliably.
+      Articles that mix topics, such as a parliament vote on a health emergency, are the most common errors.</p>
+  </section>
+</main>
+
+<script type="module">
+  const LIBRARY_URL = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1";
+
+  const MODEL_ID = "Heroine2/lingala-news-topic-classifier";
+  const LABELS = ["politics", "health", "sports", "business"];
+  const LINGALA = { politics: "politiki", health: "bokolongono", sports: "masano", business: "mombongo" };
+  const EXAMPLES = [{"headline": "Biden aboyi bondongwani na Russie na Ukraine bokozala 3e \"Guerre Mondiale\"", "text": "Joe Biden alobi kobundisi Russie na Ukraine ekozala \"guerre mondiale\" ya misato. Mokonzi ya Amerika akomi na compte Twitter na ye ete esengeli koboya bitumba ya molongo ya misato bisalama kowuta na maye mazali kosalama na Ukraine. \"Nalingi nazala polele : Tokobunda mpo na eteni inso ya mabele ma OTAN na bomoko bonso mpe na kopesa makasi ya sika na OTAN,\" ekomi Joe Biden. Président ya Etats-Unsi abakisi ete akosala bitumba te na Russie na Ukraine. Bondongwani ya miso na miso kati na OTAN na Russie bokozala bitumba ya molongo ya misato. Mpe eloko tozali kosala makasi ya kopekisa, ekomi Biden.", "true_label": "politics"}, {"headline": "Etats-Unis epesi ndingisa bakoni ba Ebola basalisama na ba anti-corps ya synthèse emekamaki na RDC", "text": "Etats-Unis epesi ndingisa ete bato bakoma kosalisama na ba anti-corps ya synthèse na bokono bwa Ebola emekamaki na RDC. Ba anti-corps ya synthèse yango ekelami na société ya biotechnologie Regeneron mpe emonisi ete bato bazali kokufa mingi te nsima na kozwa yango. Emekamaki na Ekolo Congo démocratique. Ezali lisalasi lya loilelenge wana nde président Donald Trump azwaki mpo na abika na bokono bwa COVID-19. Lisali lyango libengami Inmazeb, lipesama na mosisa. Dr. Jean-Jacques Muyembe mpe akelaki llisalisi to mono mosusu ya ndenge wana na ba anticorps \"monoclonaux\".", "true_label": "health"}, {"headline": "Mondial ya basket: USA, Australie na France baleki na 1/4 ya finale", "text": "USA, France na Australie baleki o'mokolo ya mposo na 1/4 ya finale ya Mondial ya basket na Chine. Etikali koyeka ekolo ya minei ya ngambo eye nsima na bondwana kati na Grèce na République tchèque. O'mokolo ya minei: Serbie, Espagne, Argentine na Pologne balekaki na quarts ya finale na ngambo na bango. Nsima ya elonga ya pasi na mitono moko liboso ya Turquie, USA elakisaki makasi na yango liboso ya Grèce ata yango ezali na mosani ya malamu koleka MVP ya championnat américain (NBA). Basani ya Amerika balongi Grèce 69-53. Nzokande ba Turcs balongi 93-71 ba Brésiliens. Yango ezali bokweyisami ya yambo ya monene ya Brésil. Epesi nzela na ba Grecs kowelela na ba Turcs qualification na macth ekobetama lundi. Australie nde elongi République dominicaine 82-76. France eleki na elonga na yango 78-75 liboso ya Lituanie. O'mokolo ya eyenga Serbie ekondongwana na Espagne mpe Argentine na Portugal.", "true_label": "sports"}, {"headline": "FMI elobi nkita ekiti moke na RDC", "text": "FMI (Fonds monétaire international) ebimisi mpo na mbala ya yambo banda mibu mitano, rapport mpo etabli nkita ya Congo démocratique. Ebimisi rapport eye ntango masolo mazali kokoba na bakonzi ya RDC mpo na bozongi na misala mya molongo miye o'mboka mokambami na Felix Tshisekedi. \"Bokolisami ya nkita ya 2018 bozalaki 5,8%, bowutaki mingi mpenza ba mines (makele) biye bizalaki na bokoli ya 7% ntango misala misusu (ya ba mines te) mizalaki na 1,7%,\" elimboli Philippe Egoumé, représentant ya FMI na RDC. Limpinga lyoko ya FMI liwuti kosala mobembo na Kinshasa, sanza mibale nsima na bokutani ya mokonzi ya sika ya Congo, Félix Tshisekedi, na mokambi ya FMI, Christine Lagarde. Misala ya mines nde mizali 25% ya nkita ya Congo, ekundoli M. Egoumé. \"Bana ya Congo mingi bamona mbuma ya bokoli bona te,\" elobi Egoumé. FMI ekanisi ete nkita ekoki kokita na 2019, ekoma na 4,3% pamba te misala ya mines mikomata te. Bakonzi ya Congo démocratique bakoki kosenga masolo masusu na FMI nsima na bondimami ya rapport ya nkita na yango na Conseil ya administration ya FMI na suka ya sanza ya mwambe.", "true_label": "business"}, {"headline": "Session extraordinaire ya Assemblée provinciale ya Kinshasa ekozala te mpo na COVID-19 (Godé Mpoy)", "text": "Mokambi ya Assemblée provinciale ya Kinshasa, Godé Mpoy asakoli ete session extraordinaire ekozala te mpo na COVID-19. Nzokande bakeli mibeko baike bazalaki kozela bobengisami ya session extraordinaire mpo na kotika mokanda ya kosenga bolongwi na ye. \"Kolanda mikano mitali mbonge ya mibale ya bokono bwa COVID-19, miye mipekisi bosangani ya koleka bato 10, tozali na makoki te kobengisa likita bo' momesano,\" ekomi motambwisi ya Assemblée ya Kinshasa. M. Mpoy akundoli été sessio ordinaire ya septembre esukaka le 29 décembre mpe asakoli suka ya sessio eye ebandaki. Lobi loleki liboke lya bakeli mibeko bazalaki kobongisa mokanda ya kosenga bolongwi na ye, balobaki ete bazwaki ntango te ya kotika pétition yango mpo esengalaki kolekisa yambo budget. Budget yango endimami ya 724 milliards Francs congolais. Basusu balobi ete ntina ya kolongola ye ezali lisusu te mpo M. Mpoy mpe andimi kokota na Union sacrée, lingomba mokonzi ya mboka Félix Tshisekedi azali kokela mpo na kozwa majorité ya sika na ba institution mpe koyeba kokamba malamu. Bakeli mibeko yango mpe bakanelaki mokambi ya engumba mpe etuka ya Kinshasa Gentiny Ngobila. Kasi ye mpe lokola akotia na Union sacrée.", "true_label": "health"}, {"headline": "Sassou asengi lisungi mpo na Fonds bleu ya bassain ya Congo na COP 25", "text": "Président Dennis Sassou N'Guesso ya ekolo Congo-Brazzaville asengi lisungi ya molongo mpo na Fonds Blue ya Bassin ya Congo, na bokutani ya COP 25 na Madrid epayi azwaki maloba le 2 décembre 2019 Dennis Sassou N'Guesso azali kuna lokola momemi ya maloba ya bikolo ya etuka eye ya Afrika ya kati. \"Bokutaki ya COP 25 esengeli bozala kaka te esika ya maloba pamba kasi ya komikotisa o'misala mpo na kobikisa mokili na mbongwana ya bokati zamba,\" elobi M. Sassou. Fonds Blue ekelama mpo kobatela mokili na mbongwana mozali kosalama mpo na bokati nzamba. M. Sassou akundoli ete bikolo 16 bizali kati na Fonds bleu eye. \"Fonds bleus ezali na bosenga ya lisungi public mpe privé. Nazali kobwaka mbela lelo, kolanda boyokani ya Paris,\" ebeti sete M. Sassou. M. Sassou ayebisi mokili ete ntango zamba ya Amazonie ezali kobeba, esengeli makasi esalama mpo kobatela poumon ya mibale ya mokili eye ezali nzamba ya bassin ya Congo na bonene 220 milliards ha.", "true_label": "business"}];
+
+  const $ = (id) => document.getElementById(id);
+  const button = $("classify"), status = $("status");
+  let tokenizer, model;
+
+  // Example buttons
+  EXAMPLES.forEach((example, i) => {
+    const b = document.createElement("button");
+    b.textContent = `${i + 1}. ${example.headline.slice(0, 48)}${example.headline.length > 48 ? "..." : ""} (${example.true_label})`;
+    b.addEventListener("click", () => { $("headline").value = example.headline; $("text").value = example.text; });
+    $("examples").appendChild(b);
+  });
+
+  // Same input format as in training: "headline. text"
+  function buildContent(headline, text) {
+    headline = headline.trim(); text = text.trim();
+    if (headline && text) return headline.replace(/[.!?\s]+$/, "") + ". " + text;
+    return headline || text;
+  }
+
+  function softmax(values) {
+    const max = Math.max(...values);
+    const exps = values.map((v) => Math.exp(v - max));
+    const total = exps.reduce((a, b) => a + b, 0);
+    return exps.map((v) => v / total);
+  }
+
+  async function load() {
+    try {
+      // Loaded inside a function so the page still works (examples, inputs) if the library cannot load
+      const { AutoTokenizer, AutoModelForSequenceClassification } = await import(LIBRARY_URL);
+      tokenizer = await AutoTokenizer.from_pretrained(MODEL_ID);
+      model = await AutoModelForSequenceClassification.from_pretrained(MODEL_ID, {
+        dtype: "q8",
+        progress_callback: (p) => {
+          if (p.status === "progress" && p.file && p.file.endsWith(".onnx")) {
+            status.textContent = `Downloading the model: ${Math.round(p.progress)}% (about 280 MB, only the first time)`;
+          }
+        },
+      });
+      button.disabled = false; button.textContent = "Classify";
+      status.textContent = "Model ready. Choose an example or paste your own text.";
+    } catch (error) {
+      console.error(error);
+      status.textContent = "Could not load the model: " + error.message;
+    }
+  }
+
+  async function classify() {
+    const content = buildContent($("headline").value, $("text").value);
+    if (content.split(/\s+/).filter(Boolean).length < 3) {
+      status.textContent = "Please enter at least a headline or a few sentences in Lingala.";
+      return;
+    }
+    button.disabled = true; status.textContent = "Classifying...";
+    try {
+      // Truncate to 512 sub-word tokens, as in training (head-only truncation)
+      const inputs = await tokenizer(content, { truncation: true, max_length: 512 });
+      const { logits } = await model(inputs);
+      const probabilities = softmax(Array.from(logits.data));
+      show(probabilities, content);
+      status.textContent = "Done.";
+    } catch (error) {
+      console.error(error);
+      status.textContent = "Error: " + error.message;
+    }
+    button.disabled = false;
+  }
+
+  function show(probabilities, content) {
+    const best = probabilities.indexOf(Math.max(...probabilities));
+    const label = model.config.id2label?.[best] ?? LABELS[best];
+    $("placeholder").classList.add("hidden");
+    $("result").classList.remove("hidden");
+    $("result-label").textContent = `${label} (${LINGALA[label] ?? ""})`;
+    $("result-sub").textContent = `Probability ${(probabilities[best] * 100).toFixed(0)}%`;
+    const order = probabilities.map((p, i) => [p, i]).sort((a, b) => b[0] - a[0]);
+    $("bars").innerHTML = "";
+    for (const [p, i] of order) {
+      const name = model.config.id2label?.[i] ?? LABELS[i];
+      const row = document.createElement("div");
+      row.className = "bar-row";
+      row.innerHTML = `<span>${name} <span class="note">(${LINGALA[name] ?? ""})</span></span>
+        <div class="bar-track"><div class="bar-fill" style="background: var(--${name})"></div></div>
+        <span class="num">${(p * 100).toFixed(1)}%</span>`;
+      $("bars").appendChild(row);
+      requestAnimationFrame(() => { row.querySelector(".bar-fill").style.width = `${(p * 100).toFixed(1)}%`; });
+    }
+    const words = content.split(/\s+/).filter(Boolean).length;
+    const notes = [];
+    if (probabilities[best] < 0.6) notes.push("The model is unsure: the article may mix topics (for example a government decision about a disease).");
+    if (words < 25) notes.push(`Only ${words} words: short inputs give less evidence. The model was trained on full articles (median 165 words).`);
+    $("warn").textContent = notes.join(" ");
+    $("warn").classList.toggle("hidden", notes.length === 0);
+  }
+
+  button.addEventListener("click", classify);
+  load();
+</script>
+</body>
+</html>

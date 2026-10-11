@@ -1,0 +1,3 @@
+model,tokens_per_word,share_truncated_at_512,example
+xlmr_base,1.977,0.115,▁Bak on zi ▁ya ▁bok olon gono ▁base ngi ▁bat o ▁bam iba tela
+afroxlmr_base,1.977,0.115,▁Bak on zi ▁ya ▁bok olon gono ▁base ngi ▁bat o ▁bam iba tela

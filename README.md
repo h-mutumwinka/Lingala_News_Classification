@@ -9,8 +9,8 @@ Author: Joseph Nishimwe
 | Resource | Link |
 |---|---|
 | GitHub repository | https://github.com/h-mutumwinka/Lingala_News_Classification |
-| Live web app | `https://huggingface.co/spaces/YOUR-HF-USERNAME/lingala-news-topic-classifier` *(add after deployment)* |
-| Fine-tuned model | `https://huggingface.co/YOUR-HF-USERNAME/lingala-news-topic-classifier` *(add after Part 6)* |
+| Live web app | https://h-mutumwinka.github.io/Lingala_News_Classification/ |
+| Fine-tuned model | https://huggingface.co/Heroine2/lingala-news-topic-classifier |
 | Demo video | *(add link)* |
 | Report | *(add link)* |
 
@@ -56,7 +56,7 @@ The reusable code (models, training loops, metrics) lives in `src/`.
 | 3 | Word2Vec trained on the training articles; averaged document vectors + logistic regression |
 | 4 | BiLSTM / BiGRU with attention: random vs Word2Vec embeddings, frozen vs fine-tuned, class weights |
 | 5 | Small BERT-style Transformer with its own WordPiece tokeniser, no pre-training (control) |
-| 6 | Fine-tuning XLM-R base vs AfroXLMR base (and 76L); truncation and class-weight ablations (needs a GPU) |
+| 6 | Fine-tuning XLM-R base vs AfroXLMR base; truncation and class-weight ablations (needs a GPU) |
 | 7 | Final comparison, bootstrap confidence intervals, significance tests, error analysis |
 
 Evaluation protocol:
@@ -68,7 +68,7 @@ Evaluation protocol:
 
 ## 4. Results
 
-Test set (175 articles), each final model evaluated once. Neural models: mean ± std over 3 seeds.
+Test set (175 articles), each final model evaluated once. Neural models: mean ± std over 3 seeds (Colab T4 GPU run).
 
 | Model | Macro-F1 | 95% bootstrap CI | Weighted-F1 | Accuracy | F1 business |
 |---|---|---|---|---|---|
@@ -76,34 +76,40 @@ Test set (175 articles), each final model evaluated once. Neural models: mean ±
 | TF-IDF + Complement NB | 0.673 | 0.609–0.738 | 0.773 | 0.811 | 0.111 |
 | TF-IDF (word + char) + linear SVM | 0.822 | 0.747–0.884 | 0.852 | 0.857 | 0.621 |
 | Averaged Word2Vec + LogReg | 0.860 | 0.797–0.909 | 0.875 | 0.874 | 0.718 |
-| BiLSTM + attention (Word2Vec init) | 0.861 ± 0.018 | 0.769–0.903 | 0.882 | 0.886 | 0.683 |
-| Transformer from scratch | 0.752 ± 0.041 | 0.702–0.836 | 0.822 | 0.821 | 0.374 |
-| Fine-tuned AfroXLMR / XLM-R | *run Part 6* | | | | |
+| BiLSTM + attention (Word2Vec init) | 0.859 ± 0.026 | 0.822–0.935 | 0.888 | 0.893 | 0.661 |
+| Transformer from scratch | 0.824 ± 0.041 | 0.703–0.853 | 0.876 | 0.880 | 0.563 |
+| **Fine-tuned AfroXLMR (deployed)** | **0.911 ± 0.014** | **0.866–0.963** | **0.929** | **0.930** | **0.788** |
 
 Published MasakhaNEWS weighted-F1 for Lingala (Adelani et al., 2023): NB 82.8, MLP 84.3, XLM-R base 87.9, AfroXLMR base 93.0.
 
 What we learned:
-* **Class weights** (+8 CV points) and **character n-grams** (half the fold-to-fold variance) matter most for the linear models. Naive Bayes with default smoothing on TF-IDF collapses to the majority class.
-* Averaged Word2Vec and the BiLSTM improve the small **business** class, but paired bootstrap tests show they are **statistically tied** with TF-IDF on this test set.
-* A Transformer **without pre-training** is worse than all classical models except NB, so the gains of pretrained Transformers come from pre-training.
-* Most errors are **health or business stories with political framing** (e.g. "Parliament extends the health state of emergency"). Six test articles are misclassified by all five models, which points to label ambiguity (annotator kappa 0.56).
+* **Pre-training is what makes Transformers work:** the same kind of encoder scores 0.824 from scratch and 0.911 when fine-tuned from AfroXLMR (paired bootstrap vs TF-IDF: p = 0.002).
+* **Pre-training on related African languages beats general multilingual pre-training:** AfroXLMR beats XLM-R by 4.5 validation macro-F1 points with the identical tokeniser, although neither saw Lingala.
+* For the classical models, **class weights** (+8 CV points) and **character n-grams** (half the fold-to-fold variance) matter most. Naive Bayes with default smoothing on TF-IDF collapses to the majority class.
+* Most remaining errors are **business or health stories with political framing** (e.g. "Parliament extends the health state of emergency"). Three test articles are misclassified by all six models, which points to label ambiguity (annotator kappa 0.56).
 
 All experiment tables are in `results/experiment_logs/` and `results/comparison/`.
 
 ## 5. Web application
 
-`app/app.py` is a Gradio app. The user pastes a Lingala headline and/or article, picks a model and gets the probability of each topic
-(with the Lingala topic name), a warning when the model is unsure, and, for the TF-IDF model, the words that pushed the prediction.
+**Live app: https://h-mutumwinka.github.io/Lingala_News_Classification/** (hosted for free on GitHub Pages from the `docs/` folder).
+
+The user pastes a Lingala headline and/or article, presses **Classify**, and gets the predicted topic with the probability of each topic
+(with its Lingala name), a warning when the model is unsure or the input is very short, and six real test-set examples to try.
+
+How the app connects to the model:
+1. The fine-tuned AfroXLMR model is stored on the Hugging Face Hub (`Heroine2/lingala-news-topic-classifier`).
+2. `scripts/export_onnx.py` converts it to ONNX and quantises the weights to 8 bits (about 1.1 GB to about 280 MB).
+3. `docs/index.html` loads [Transformers.js](https://huggingface.co/docs/transformers.js), downloads the tokenizer and the 8-bit model once
+   (then cached by the browser), builds the input exactly as in training (`headline. text`, truncated to 512 tokens), runs the model
+   in the browser and applies a softmax to the four logits. No server is needed and the text never leaves the user's computer.
+
+A short Gradio version (`app/app.py`, about 50 lines) can also be run locally:
 
 ```bash
-python app/app.py                 # TF-IDF model only
-TRANSFORMER_MODEL=YOUR-HF-USERNAME/lingala-news-topic-classifier python app/app.py   # also the fine-tuned Transformer
+pip install -r requirements.txt
+TRANSFORMER_MODEL=Heroine2/lingala-news-topic-classifier python app/app.py
 ```
-
-Deploying to Hugging Face Spaces:
-1. Create a new Space (SDK: Gradio, hardware: free CPU).
-2. Run `bash app/prepare_space.sh` and upload everything in `space_upload/` to the Space.
-3. Optional: in the Space settings add the variable `TRANSFORMER_MODEL` with your model repository name (pushed from Part 6).
 
 ## 6. How to reproduce
 
@@ -125,7 +131,9 @@ probabilities of every final model are saved in `results/predictions/`, so Part 
 ## 7. Repository structure
 
 ```
-app/                  Gradio web app, Space README, examples from the test set
+app/                  Short local Gradio app (app.py)
+docs/                 Static web app served by GitHub Pages
+scripts/              ONNX export for the browser app
 data/raw/             MasakhaNEWS Lingala TSV files (train, dev, test)
 data/processed/       Cleaned CSV splits (created by src/data_preparation.py)
 models/               Saved TF-IDF model and Word2Vec vectors (the Transformer lives on the Hugging Face Hub)

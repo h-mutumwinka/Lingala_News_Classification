@@ -16,15 +16,19 @@ bag_of_words,C2_text_only,0.851,0.881,0.02,Only the body text
 bag_of_words,C3_strip_accents,0.858,0.881,0.022,"Remove accents: été -> ete, Léopards -> Leopards"
 bag_of_words,D_C=0.1,0.843,0.902,0.029,Smaller C = stronger regularisation
 bag_of_words,D_C=10,0.861,0.881,0.028,Smaller C = stronger regularisation
-rnn,R1_bilstm_random_embeddings,,0.863,,Random embeddings instead of Word2Vec
-rnn,R2_bilstm_word2vec_finetuned,,0.89,,"Reference: Word2Vec init, fine-tuned"
-rnn,R3_bilstm_word2vec_frozen,,0.856,,Word2Vec frozen (not updated)
-rnn,R4_bilstm_last_state,,0.921,,Last hidden state instead of attention
-rnn,R5_bigru_attention,,0.862,,GRU instead of LSTM
-rnn,R6_bilstm_no_class_weights,,0.925,,Unweighted cross-entropy
-transformer_scratch,T1_2layers_128d,,0.844,,"2 layers, hidden 128, 256 tokens"
-transformer_scratch,T2_4layers_256d,,0.769,,"Bigger: 4 layers, hidden 256"
-transformer_scratch,T3_2layers_512tokens,,0.809,,Longer input: 512 tokens
+rnn,R1_bilstm_random_embeddings,,0.853,,Random embeddings instead of Word2Vec
+rnn,R2_bilstm_word2vec_finetuned,,0.888,,"Reference: Word2Vec init, fine-tuned"
+rnn,R3_bilstm_word2vec_frozen,,0.9,,Word2Vec frozen (not updated)
+rnn,R4_bilstm_last_state,,0.895,,Last hidden state instead of attention
+rnn,R5_bigru_attention,,0.874,,GRU instead of LSTM
+rnn,R6_bilstm_no_class_weights,,0.905,,Unweighted cross-entropy
+transformer_pretrained,P1_xlmr_base,,0.865,,XLM-R base: no African-language adaptation
+transformer_pretrained,P2_afroxlmr_base,,0.91,,AfroXLMR base: adapted to 17 African languages (not Lingala)
+transformer_pretrained,Q1_head_only,,0.933,,Keep only the first 510 tokens
+transformer_pretrained,Q2_no_class_weights,,0.933,,Unweighted cross-entropy
+transformer_scratch,T1_2layers_128d,,0.846,,"2 layers, hidden 128, 256 tokens"
+transformer_scratch,T2_4layers_256d,,0.846,,"Bigger: 4 layers, hidden 256"
+transformer_scratch,T3_2layers_512tokens,,0.826,,Longer input: 512 tokens
 word2vec,W1_skipgram_100d,,0.839,,Averaged Word2Vec + logistic regression
 word2vec,W2_cbow_100d,,0.809,,Averaged Word2Vec + logistic regression
 word2vec,W3_skipgram_300d,,0.85,,Averaged Word2Vec + logistic regression
