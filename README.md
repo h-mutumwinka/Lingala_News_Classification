@@ -4,15 +4,14 @@ Automatic topic classification of **Lingala** news articles into **politics, hea
 Lingala part of [MasakhaNEWS](https://huggingface.co/datasets/masakhane/masakhanews) (Adelani et al., 2023).
 
 ALU · NLP and Language Technologies · Summative project (Option 3: Text Classification for an African Language)
-Author: Joseph Nishimwe
+Author: Heroine Mutumwinka
 
 | Resource | Link |
 |---|---|
 | GitHub repository | https://github.com/h-mutumwinka/Lingala_News_Classification |
 | Live web app | https://h-mutumwinka.github.io/Lingala_News_Classification/ |
 | Fine-tuned model | https://huggingface.co/Heroine2/lingala-news-topic-classifier |
-| Demo video | *(add link)* |
-| Report | *(add link)* |
+| Demo video | https://drive.google.com/drive/folders/1einOMs-RzFAubxpyxE9tfNVEszPOvky4 |
 
 ## 1. Problem
 
@@ -82,7 +81,7 @@ Test set (175 articles), each final model evaluated once. Neural models: mean ±
 
 Published MasakhaNEWS weighted-F1 for Lingala (Adelani et al., 2023): NB 82.8, MLP 84.3, XLM-R base 87.9, AfroXLMR base 93.0.
 
-What we learned:
+What I learned:
 * **Pre-training is what makes Transformers work:** the same kind of encoder scores 0.824 from scratch and 0.911 when fine-tuned from AfroXLMR (paired bootstrap vs TF-IDF: p = 0.002).
 * **Pre-training on related African languages beats general multilingual pre-training:** AfroXLMR beats XLM-R by 4.5 validation macro-F1 points with the identical tokeniser, although neither saw Lingala.
 * For the classical models, **class weights** (+8 CV points) and **character n-grams** (half the fold-to-fold variance) matter most. Naive Bayes with default smoothing on TF-IDF collapses to the majority class.
@@ -122,7 +121,7 @@ git clone https://github.com/h-mutumwinka/Lingala_News_Classification.git
 cd Lingala_News_Classification
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-python -m src.data_preparation          # downloads and cleans the data into data/processed/
+python -m src.data_preparation          for downloading and cleaning the data into data/processed/
 jupyter notebook notebooks/lingala_news_classification.ipynb
 ```
 
